@@ -47,8 +47,43 @@ public class Server {
         this.paths.get(method).put(urlPath, filePath);
     }
 
+    public String getPath(String urlPath) {
+        return this.paths.get("GET").get(urlPath);
+    }
+    public String postPath(String urlPath) {
+        return this.paths.get("POST").get(urlPath);
+    }
+    public String methPath(String method, String urlPath) {
+        return this.paths.get(method).get(urlPath);
+    }
+
+    public void mapDirectory(String dirPath) {
+        this.mapDirectory("/", dirPath);
+    }
+    public void mapDirectory(String urlPath, String dirPath) {
+        if (!urlPath.endsWith("/"))
+            urlPath+="/";
+        if (!dirPath.endsWith("/"))
+            dirPath+="/";
+
+        File dir = new File(dirPath);
+
+        for (String p : dir.list()) {
+            File cuF = new File(dirPath + p);
+
+            if (cuF.isDirectory()) {
+                this.mapDirectory(urlPath+p, dirPath+p);
+                continue;
+            }
+            this.get(urlPath + p, dirPath + p);
+        }
+    }
+
     public static void main(String[] args) {
         Server webServer = new Server(80, "HTTP-SERVER");
+        // webServer.get("/", "html_test/index.html");
+        webServer.mapDirectory("html_test/");
+
         webServer.start();
     }
 }

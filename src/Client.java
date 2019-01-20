@@ -46,8 +46,20 @@ public class Client implements Runnable {
     private void handleRequest() {
         try {
             String[] fHead = this.in.readLine().split(" ");
+            String response = fHead[2];
 
-            this.out.println("HTTP/1.1 200 OK\r\nContent-type: text/html; charset=\"utf-8\"\r\n\r\n<!DOCTYPE html><html><head></head><body><h1>Hello World!</h1></body></html>");
+            if (this.mother.methPath(fHead[0].toUpperCase(), fHead[1]) != null) {
+                response += " 200 OK\r\n\r\n";
+
+                FileReader fInput = new FileReader(this.mother.methPath(fHead[0].toUpperCase(), fHead[1]));
+                int c;
+                while ((c = fInput.read()) != -1)
+                    response += (char) c;
+            } else {
+                response += " 404 NOT_FOUND\r\n\r\n<!DOCTYPE html><html><head></head><body><h1>Error 404: Page not found!</h1></body></html>";
+            }
+
+            this.out.println(response);
         } catch (IOException e) {
             System.out.println(" [ERROR]: IOException ... ");
             System.out.println(e.getMessage());
