@@ -46,6 +46,8 @@ public class Client implements Runnable {
     private void handleRequest() {
         try {
             String[] fHead = this.in.readLine().split(" ");
+            fHead[1] = this.urlDecode(fHead[1]);
+
             String response = fHead[2];
 
             if (this.mother.methPath(fHead[0].toUpperCase(), fHead[1]) != null) {
