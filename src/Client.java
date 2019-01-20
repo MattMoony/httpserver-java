@@ -1,6 +1,7 @@
 import java.net.*;
 import java.io.*;
-import java.util.stream.Stream;
+
+import http.Response;
 
 public class Client implements Runnable {
     private Thread thread;
@@ -48,17 +49,18 @@ public class Client implements Runnable {
             String[] fHead = this.in.readLine().split(" ");
             fHead[1] = this.urlDecode(fHead[1]);
 
-            String response = fHead[2];
+            Response response = new Response(fHead[2]);
 
             if (this.mother.methPath(fHead[0].toUpperCase(), fHead[1]) != null) {
-                response += " 200 OK\r\n\r\n";
+                response.setStatus(200, "OK");
 
                 FileReader fInput = new FileReader(this.mother.methPath(fHead[0].toUpperCase(), fHead[1]));
                 int c;
                 while ((c = fInput.read()) != -1)
-                    response += (char) c;
+                    response.body += (char) c;
             } else {
-                response += " 404 NOT_FOUND\r\n\r\n<!DOCTYPE html><html><head></head><body><h1>Error 404: Page not found!</h1></body></html>";
+                response.setStatus(404, "NOT_FOUND");
+                response.body = "<!DOCTYPE html><html><head></head><body><h1>Error 404: Page not found!</h1></body></html>";
             }
 
             this.out.println(response);
