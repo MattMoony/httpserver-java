@@ -1,5 +1,6 @@
 import java.net.*;
 import java.io.*;
+import java.util.stream.Stream;
 
 public class Client implements Runnable {
     private Thread thread;
@@ -16,12 +17,14 @@ public class Client implements Runnable {
 
     @Override
     public void run() {
-        String nLine;
+        String request = "";
 
         try {
-            while ((nLine = this.in.readLine()) != null) {
-                System.out.println(nLine);
-            }
+            char[] buff = new char[1];
+            this.in.read(buff);
+
+            System.out.println("now");
+            this.out.println("HTTP/1.1 200 OK\r\nContent-type: text/html; charset=\"utf-8\"\r\n\r\n<!DOCTYPE html><html><head></head><body><h1>Hello World!</h1></body></html>");
         } catch (IOException e) {
             System.out.println(" [ERROR]: IOException ... ");
             System.out.println(e.getMessage());
