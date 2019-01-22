@@ -167,6 +167,11 @@ public class Server {
         webServer.get("/something/<a>/<b>/<c>/", (req, res) -> {
             System.out.println(" [/something/<a>/<b>/<c>/] params: " + req.urlParams);
         });
+        webServer.get("/get/<something>/", (req, res) -> {
+            System.out.println(" [/get/<something>/]: ");
+            System.out.println("\t url-params: " + req.urlParams);
+            System.out.println("\t get-params: " + req.getParams);
+        });
 
 
 

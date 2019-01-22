@@ -19,7 +19,10 @@ public class Request {
                     patternPath;
     private Server server;
     private HashMap<String, String> headers = new HashMap<>();
-    public HashMap<String, String> urlParams = new HashMap<>();
+
+    public HashMap<String, String> urlParams = new HashMap<>(),
+                                    getParams = new HashMap<>(),
+                                    postParams = new HashMap<>();
 
     public Request(String remoteSocket, Server server) {
         this.remoteSocket = remoteSocket;
@@ -58,12 +61,27 @@ public class Request {
         else
             this.filename = "/";
 
-        for (int i = 1; i < lines.length; i++) {
+        int i;
+        for (i = 1; i < lines.length; i++) {
+            if (lines[i].equals(""))
+                break;
             String[] header = lines[i].split(": ");
             this.headers.put(header[0], header[1]);
         }
 
+        if (++i<lines.length) {
+            String[] paramParts = new String[lines.length-i];
+            for (; i < lines.length; i++)
+                paramParts[i] = lines[i];
+
+            this.parsePostParameters(paramParts);
+        }
+
         this.extension = this.filename.contains(".") ? this.filename.substring(this.filename.lastIndexOf(".")+1) : "";
+
+        if (this.path.contains("?"))
+            this.parseGetParameters(this.path);
+
         this.patternPath = this.server.getPatternPath(this.type, this.path);
         if (this.patternPath!=null)
             this.parseURLParameters(this.path);
@@ -98,6 +116,43 @@ public class Request {
             if (patternParts[i].matches("<[^/.]+>")) {
                 this.urlParams.put(patternParts[i].substring(1, patternParts[i].length()-1), pathParts[i]);
             }
+        }
+    }
+
+    public void parseGetParameters() {
+        this.parseGetParameters(this.path);
+    }
+    public void parseGetParameters(String path) {
+        String[] params = path.split("[?]")[1].split("&");
+        for (String p : params) {
+            if (p.contains("=")) {
+                String[] parts = p.split("=");
+                this.getParams.put(parts[0].trim(), parts[1].trim());
+            } else {
+                this.getParams.put(p.trim(), "");
+            }
+        }
+    }
+
+    public void parsePostParameters(String[] paramParts) {
+        switch (this.getHeader("Content-Type")) {
+            case "application/x-www-form-urlencoded": {
+                for (String pPart : paramParts) {
+                    String[] args = pPart.split("&");
+                    for (String arg : args) {
+                        if (arg.contains("=")) {
+                            this.postParams.put(arg.split("=")[0].trim(), arg.split("=")[1].trim());
+                        } else {
+                            this.postParams.put(arg.trim(), "");
+                        }
+                    }
+                }
+            }
+            break;
+            case "multipart/form-data": {
+
+            }
+            break;
         }
     }
 
