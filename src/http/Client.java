@@ -14,6 +14,9 @@ public class Client implements Runnable {
     private OutputStream outBytes;
     private BufferedReader in;
 
+    private Request req;
+    private Response res;
+
     public Client(Socket cSocket, Server mom) throws IOException {
         this.cSocket = cSocket;
         this.outBytes = cSocket.getOutputStream();
@@ -24,10 +27,12 @@ public class Client implements Runnable {
 
     private void handleRequest(String remoteSocket) {
         try {
-            Request request = new Request(remoteSocket, this.in, this.mother);
+            Request request = new Request(remoteSocket, this.cSocket.getInputStream(), this.mother);
+            this.req = request;
             if (request.type == null)
                 return;
             Response response = new Response(request.protocolVersion);
+            this.res = response;
             Document doc;
 
             // -- REQUEST HANDLING -- //
@@ -66,8 +71,9 @@ public class Client implements Runnable {
 
     @Override
     public void run() {
-        System.out.println(" [" + this.mother.sName + "]: NEW REQUEST FROM " + this.cSocket.getRemoteSocketAddress().toString().substring(1) + " ... ");
         this.handleRequest(this.cSocket.getRemoteSocketAddress().toString().substring(1));
+        System.out.println(" [" + this.mother.sName + "]: " + this.cSocket.getRemoteSocketAddress().toString().substring(1) +
+                " HAS REQUESTED \"" + this.req.path + "\" ... ");
     }
 
     public void start() {

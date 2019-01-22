@@ -67,10 +67,28 @@ public class Server {
         this.set("POST", urlPath, callback);
     }
     public void set(String method, String urlPath, String filePath) {
+        method = method.toUpperCase();
         this.paths.get(method).put(urlPath, filePath);
     }
     public void set(String method, String urlPath, RequestHandler<Request, Response> callback) {
+        method = method.toUpperCase();
         this.paths.get(method).put(urlPath, callback);
+    }
+    public void set(String urlPath, String filePath, String method, String... methods) {
+        method = method.toUpperCase();
+        this.paths.get(method).put(urlPath, filePath);
+        for (String meth : methods) {
+            meth = meth.toUpperCase();
+            this.paths.get(meth).put(urlPath, filePath);
+        }
+    }
+    public void set(String urlPath, RequestHandler<Request, Response> callback, String method, String... methods) {
+        method = method.toUpperCase();
+        this.paths.get(method).put(urlPath, callback);
+        for (String meth : methods) {
+            meth = meth.toUpperCase();
+            this.paths.get(meth).put(urlPath, callback);
+        }
     }
 
 
@@ -131,6 +149,8 @@ public class Server {
     }
     public String getPatternPath(String method, String path) {
         method = method.toUpperCase();
+        if (path.contains("?"))
+            path = path.split("[?]")[0];
 
         for (String p : this.paths.get(method).keySet()) {
             String regex = p.replaceAll("<[^/.]+>", ".+");
@@ -161,6 +181,9 @@ public class Server {
                 response.sendFile("html_test/video.mp4");
             } catch (FileNotFoundException e) {}
         });
+        webServer.get("/baum", (req, res) -> {
+            try { res.sendFile("src/default/400.html"); } catch (FileNotFoundException e) {}
+        });
         webServer.get("/special/<code>/", (req, res) -> {
             System.out.println(" [/special/<code>/] params: " + req.urlParams);
         });
@@ -172,6 +195,14 @@ public class Server {
             System.out.println("\t url-params: " + req.urlParams);
             System.out.println("\t get-params: " + req.getParams);
         });
+        webServer.set("/post", (req, res) -> {
+            System.out.println(req.getParams);
+            System.out.println(req.postParams);
+
+            try {
+                res.sendFile("html_test/post.html");
+            } catch (FileNotFoundException e) {}
+        }, "GET", "POST");
 
 
 

@@ -2,13 +2,14 @@ package http;
 
 import web.URL;
 
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 
 public class Request {
     public String protocolVersion,
                     type,
+                    urlPath,
                     path,
                     directory,
                     filename,
@@ -35,7 +36,7 @@ public class Request {
         this(remoteSocket, server);
         this.parseString(requestString);
     }
-    public Request(String remoteSocket, BufferedReader in, Server server) {
+    public Request(String remoteSocket, InputStream in, Server server) {
         this(remoteSocket, server);
         this.parseStream(in);
     }
@@ -43,24 +44,40 @@ public class Request {
 
 
     public void parseString(String requestString) {
+        // -- GET LINES -- //
         String[] lines = requestString.split("\r\n");
         if (!lines[0].contains(" "))
             return;
 
+        // -- REQUEST: FIRST LINE -- //
         this.type = lines[0].split(" ")[0].toUpperCase();
-        this.path = URL.decode(lines[0].split(" ")[1]);
+        this.urlPath = URL.decode(lines[0].split(" ")[1]);
+        if (this.urlPath.contains("?"))
+            this.path = this.urlPath.split("[?]")[0];
+        else
+            this.path = this.urlPath;
+
         this.protocolVersion = lines[0].split(" ")[2];
 
+        // -- GET PARAMETERS -- //
+        if (this.urlPath.contains("?")) {
+            this.parseGetParameters(this.urlPath);
+        }
+
+        // -- DIRECTORY PATH -- //
         String[] pathParts = this.path.split("/");
         this.directory = "";
         for (int i = 0; i < pathParts.length-1; i++) {
             this.directory += pathParts[i] + "/";
         }
+
+        // -- FILENAME -- //
         if (pathParts.length > 0)
             this.filename = pathParts[pathParts.length-1];
         else
             this.filename = "/";
 
+        // -- HEADERS -- //
         int i;
         for (i = 1; i < lines.length; i++) {
             if (lines[i].equals(""))
@@ -69,31 +86,33 @@ public class Request {
             this.headers.put(header[0], header[1]);
         }
 
+        // -- POST PARAMETERS -- //
         if (++i<lines.length) {
             String[] paramParts = new String[lines.length-i];
-            for (; i < lines.length; i++)
-                paramParts[i] = lines[i];
+            for (int j = 0; i < lines.length; i++, j++)
+                paramParts[j] = lines[i];
 
             this.parsePostParameters(paramParts);
         }
 
+        // -- FILE EXTENSION -- //
         this.extension = this.filename.contains(".") ? this.filename.substring(this.filename.lastIndexOf(".")+1) : "";
 
-        if (this.path.contains("?"))
-            this.parseGetParameters(this.path);
-
+        // -- URL PARAMETERS -- //
         this.patternPath = this.server.getPatternPath(this.type, this.path);
         if (this.patternPath!=null)
             this.parseURLParameters(this.path);
     }
-    public void parseStream(BufferedReader in) {
+    public void parseStream(InputStream inStream) {
+        // BufferedReader in = new BufferedReader(new InputStreamReader(inStream));
         String requestString = "";
 
         try {
-            String line;
-
-            while ((line = in.readLine()) != null && line.length() > 0)
-                requestString += line + "\r\n";
+            while (!(inStream.available() > 0)) {}
+            int c;
+            while (inStream.available() > 0 && (c = inStream.read()) != -1 && c != '\0') {
+                requestString += (char) c;
+            }
         } catch (IOException e) {
             System.out.println(" [ERROR]: IOException whilst parsing stream ... ");
             System.out.println(e.getMessage());
@@ -120,14 +139,14 @@ public class Request {
     }
 
     public void parseGetParameters() {
-        this.parseGetParameters(this.path);
+        this.parseGetParameters(this.urlPath);
     }
     public void parseGetParameters(String path) {
         String[] params = path.split("[?]")[1].split("&");
         for (String p : params) {
             if (p.contains("=")) {
                 String[] parts = p.split("=");
-                this.getParams.put(parts[0].trim(), parts[1].trim());
+                this.getParams.put(parts[0].trim(), parts.length > 1 ? parts[1].trim() : "");
             } else {
                 this.getParams.put(p.trim(), "");
             }
@@ -141,7 +160,8 @@ public class Request {
                     String[] args = pPart.split("&");
                     for (String arg : args) {
                         if (arg.contains("=")) {
-                            this.postParams.put(arg.split("=")[0].trim(), arg.split("=")[1].trim());
+                            this.postParams.put(arg.split("=")[0].trim(), arg.split("=").length > 1 ?
+                                    arg.split("=")[1].trim() : "");
                         } else {
                             this.postParams.put(arg.trim(), "");
                         }
