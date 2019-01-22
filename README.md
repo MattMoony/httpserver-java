@@ -1,4 +1,4 @@
-A simple HTTP Server
+A simple HTTP http.Server
 --------------------
 
 Hi, this is a project, I've wanted to work on for quite some time.

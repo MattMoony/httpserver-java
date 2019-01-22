@@ -8,7 +8,7 @@ public class Response {
                     protocolVersion;
     private HashMap<String, String> headers = new HashMap<>();
 
-    public String body = "";
+    public Object body = "";
 
 
 
@@ -56,6 +56,18 @@ public class Response {
     }
     public String getHeader(String header) {
         return this.headers.get(header);
+    }
+
+
+
+    public String headersString() {
+        String ret = this.protocolVersion + " " + this.statusCode + " " + this.statusShort + "\r\n";
+
+        for (String key : this.headers.keySet()) {
+            ret += key + ": " + this.headers.get(key) + "\r\n";
+        }
+
+        return ret + "\r\n";
     }
 
 
