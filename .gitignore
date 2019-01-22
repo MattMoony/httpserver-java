@@ -2,6 +2,7 @@
 /.idea/*
 /.idea
 /HTTPServer.iml
+/out/*
 
 # Compiled class file
 *.class
