@@ -1,5 +1,8 @@
 package http;
 
+import web.Document;
+
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 
 public class Response {
@@ -44,6 +47,9 @@ public class Response {
     public void setStatus(int code, String shortDescription) {
         this.statusCode = code;
         this.statusShort = shortDescription;
+
+        if (this.body.equals(""))
+            this.body = this.statusCode + ": " + this.statusShort;
     }
     public void setHeader(String header, String value) {
         this.headers.put(header, value);
@@ -69,7 +75,12 @@ public class Response {
 
         return ret + "\r\n";
     }
-
+    public void send(String body) {
+        this.body = body;
+    }
+    public void sendFile(String filePath) throws FileNotFoundException {
+        this.body = Document.readDocument(filePath);
+    }
 
 
     @Override

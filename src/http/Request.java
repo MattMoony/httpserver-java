@@ -12,16 +12,28 @@ public class Request {
                     path,
                     directory,
                     filename,
-                    extension;
+                    extension,
+                    remoteIp,
+                    remotePort,
+                    remoteSocket,
+                    patternPath;
+    private Server server;
     private HashMap<String, String> headers = new HashMap<>();
+    public HashMap<String, String> urlParams = new HashMap<>();
 
+    public Request(String remoteSocket, Server server) {
+        this.remoteSocket = remoteSocket;
+        this.remoteIp = this.remoteSocket.split(":")[0];
+        this.remotePort = this.remoteSocket.split(":")[1];
 
-
-    public Request() {}
-    public Request(String requestString) {
+        this.server = server;
+    }
+    public Request(String remoteSocket, String requestString, Server server) {
+        this(remoteSocket, server);
         this.parseString(requestString);
     }
-    public Request(BufferedReader in) {
+    public Request(String remoteSocket, BufferedReader in, Server server) {
+        this(remoteSocket, server);
         this.parseStream(in);
     }
 
@@ -29,6 +41,8 @@ public class Request {
 
     public void parseString(String requestString) {
         String[] lines = requestString.split("\r\n");
+        if (!lines[0].contains(" "))
+            return;
 
         this.type = lines[0].split(" ")[0].toUpperCase();
         this.path = URL.decode(lines[0].split(" ")[1]);
@@ -50,6 +64,9 @@ public class Request {
         }
 
         this.extension = this.filename.contains(".") ? this.filename.substring(this.filename.lastIndexOf(".")+1) : "";
+        this.patternPath = this.server.getPatternPath(this.type, this.path);
+        if (this.patternPath!=null)
+            this.parseURLParameters(this.path);
     }
     public void parseStream(BufferedReader in) {
         String requestString = "";
@@ -67,6 +84,23 @@ public class Request {
         this.parseString(requestString);
     }
 
+    public void parseURLParameters() {
+        this.parseURLParameters(this.path);
+    }
+    public void parseURLParameters(String path) {
+        String[] patternParts = this.patternPath.split("/"),
+                pathParts = path.split("/");
+
+        for (int i = 0; i < patternParts.length; i++) {
+            if (patternParts[i].matches("\\s*") || pathParts[i].matches("\\s*"))
+                continue;
+
+            if (patternParts[i].matches("<[^/.]+>")) {
+                this.urlParams.put(patternParts[i].substring(1, patternParts[i].length()-1), pathParts[i]);
+            }
+        }
+    }
+
 
 
     public HashMap<String, String> getHeaders() {
@@ -75,8 +109,6 @@ public class Request {
     public String getHeader(String header) {
         return this.headers.get(header);
     }
-
-
 
     public void setHeader(String header, String value) {
         this.headers.put(header, value);

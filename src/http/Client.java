@@ -22,33 +22,40 @@ public class Client implements Runnable {
         this.mother = mom;
     }
 
-    private void handleRequest() {
+    private void handleRequest(String remoteSocket) {
         try {
-            Request request = new Request(this.in);
+            Request request = new Request(remoteSocket, this.in, this.mother);
+            if (request.type == null)
+                return;
             Response response = new Response(request.protocolVersion);
             Document doc;
 
-            if (this.mother.fileExists(request.type, request.path)) {
-                response.setStatus(200, "OK");
+            // -- REQUEST HANDLING -- //
 
-                doc = new Document(this.mother.methPath(request.type, request.path));
-                response.body = doc.read();
+            if (this.mother.isPath(request.type, request.path)) {
+                if (this.mother.methPath(request.type, request.path) instanceof String) {
+                    response.setStatus(200, "OK");
+
+                    doc = new Document((String) this.mother.methPath(request.type, request.path));
+                    response.body = doc.read();
+                } else {
+                    ((RequestHandler<Request, Response>) this.mother.methPath(request.type, request.path)).apply(request, response);
+                }
             } else {
                 response.setStatus(404, "NOT-FOUND");
-                response.body = "<!DOCTYPE html><html><head></head><body><h1>Error 404: Page not found!</h1></body></html>";
-
-                this.out.println(response);
-                this.cSocket.close();
-
-                return;
+                response.body = this.mother.errorPage(404);
             }
 
-            if (doc.isText()) {
-                this.out.println(response);
-            } else {
-                this.outBytes.write(response.headersString().getBytes());
-                this.outBytes.write((byte[]) response.body);
+            // -- RESPONSE HANDLING -- //
+
+            if (response.body instanceof String) {
+                response.body = ((String) response.body).getBytes();
             }
+
+            this.outBytes.write(response.headersString().getBytes());
+            this.outBytes.write((byte[]) response.body);
+
+            // -- CLOSE THE SOCKET -- //
 
             this.cSocket.close();
         } catch (IOException e) {
@@ -59,8 +66,8 @@ public class Client implements Runnable {
 
     @Override
     public void run() {
-        System.out.println(" [" + this.mother.sName + "]: NEW REQUEST FROM " + this.cSocket.getInetAddress().toString().substring(1) + " ... ");
-        this.handleRequest();
+        System.out.println(" [" + this.mother.sName + "]: NEW REQUEST FROM " + this.cSocket.getRemoteSocketAddress().toString().substring(1) + " ... ");
+        this.handleRequest(this.cSocket.getRemoteSocketAddress().toString().substring(1));
     }
 
     public void start() {
