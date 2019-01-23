@@ -54,6 +54,8 @@ public class Client implements Runnable {
             // -- RESPONSE HANDLING -- //
 
             if (response.body instanceof String) {
+                // -- REMOVE TO MANY LINE BREAKS ... -- //
+                response.body = ((String) response.body).trim().replaceAll("(?:\n|\r){3}", "");
                 response.body = ((String) response.body).getBytes();
             }
 

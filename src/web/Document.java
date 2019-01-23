@@ -1,6 +1,11 @@
 package web;
 
+import php.PHPParser;
+
 import java.io.*;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Document {
     public String path,
@@ -67,18 +72,23 @@ public class Document {
 
         return this.content;
     }
+
     public void parsePHP() {
-        this.parsingLine = 0;
-        String[] parts = this.content.toString().split("<\\?php");
+        Pattern phpBlocksPattern = Pattern.compile("<[?]php[\\s\\S]*?[?]>");
+        Matcher phpBlocksMatcher = phpBlocksPattern.matcher((String) this.content);
 
-        for (int i = 1; i < parts.length; i++) {
-            String code = parts[i].substring(0, parts[i].contains("?>") ? parts[i].indexOf("?>") : parts[i].length());
-            parts[i] = parts[i].substring(parts[i].contains("?>") ? parts[i].indexOf("?>")+2 : parts[i].length() - 1);
+        PHPParser parser = new PHPParser();
 
-            // evaluate "code" ...
-            code = code.trim();
+        while (phpBlocksMatcher.find()) {
+            String tag = phpBlocksMatcher.group(),
+                    code = tag.substring(5, tag.length()-2).trim();
+
+            Pattern phpStatementsPattern = Pattern.compile("[\\s\\S]*?(?:;|\\{|\\})(?=(?:[^\"']*(?:\"|')[^\"']*(?:\"|'))*[^\"|']*$)");
+            Matcher phpStatementsMatcher = phpStatementsPattern.matcher(code);
+
+            String blockOutput = parser.parseCode(phpStatementsMatcher);
+            this.content = ((String)this.content).replace(tag, blockOutput);
         }
-        this.content = String.join("", parts);
     }
 
 

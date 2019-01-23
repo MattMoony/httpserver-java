@@ -196,8 +196,10 @@ public class Server {
             System.out.println("\t get-params: " + req.getParams);
         });
         webServer.set("/post", (req, res) -> {
-            System.out.println(req.getParams);
-            System.out.println(req.postParams);
+            System.out.println();
+            System.out.println(" [GET-PARAMETERS]: " + req.getParams);
+            System.out.println(" [POST-PARAMETERS]: " + req.postParams);
+            System.out.println();
 
             try {
                 res.sendFile("html_test/post.html");
